@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xin lỗi bé yêu</title>
+<style>
+  :root{
+    --pink-bg-1:#ffe3ec;
+    --pink-bg-2:#ffc2d9;
+    --pink-deep:#ff5c8a;
+    --pink-dark:#d6336c;
+    --white:#fffdfd;
+    --shadow:#e5578e55;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:linear-gradient(160deg,var(--pink-bg-1),var(--pink-bg-2));
+    font-family:"Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    overflow:hidden;
+    position:relative;
+  }
+  .card{
+    background:var(--white);
+    border-radius:28px;
+    padding:36px 32px 44px;
+    max-width:420px;
+    width:88vw;
+    text-align:center;
+    box-shadow:0 20px 50px var(--shadow);
+    position:relative;
+    z-index:2;
+  }
+  .gif{
+    width:180px;
+    height:180px;
+    object-fit:cover;
+    border-radius:50%;
+    border:5px solid var(--pink-deep);
+    margin-bottom:18px;
+  }
+  h1{
+    font-size:1.35rem;
+    color:var(--pink-dark);
+    line-height:1.5;
+    margin:0 0 28px;
+  }
+  .buttons{
+    display:flex;
+    justify-content:center;
+    gap:16px;
+    position:relative;
+    height:56px;
+  }
+  button{
+    border:none;
+    border-radius:999px;
+    padding:14px 26px;
+    font-size:1rem;
+    font-weight:600;
+    cursor:pointer;
+    transition:transform .15s ease;
+  }
+  #yes{
+    background:var(--pink-deep);
+    color:#fff;
+  }
+  #yes:hover{ transform:scale(1.08); }
+  #no{
+    background:#fff;
+    color:var(--pink-dark);
+    border:2px solid var(--pink-deep);
+    position:relative;
+  }
+  #result{
+    margin-top:20px;
+    font-size:1.1rem;
+    color:var(--pink-dark);
+    font-weight:600;
+    min-height:1.4em;
+  }
+  .heart{
+    position:fixed;
+    top:-10%;
+    font-size:1.4rem;
+    opacity:.9;
+    animation:fall linear infinite;
+    z-index:9999;
+    pointer-events:none;
+  }
+  @keyframes fall{
+    to{ transform:translateY(110vh) rotate(360deg); }
+  }
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.45);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:50;
+  }
+  .modal-overlay.show{
+    display:flex;
+  }
+  .modal-box{
+    background:var(--white);
+    border-radius:22px;
+    padding:30px 26px;
+    max-width:300px;
+    width:80vw;
+    text-align:center;
+    box-shadow:0 20px 50px rgba(0,0,0,.25);
+    animation:pop .25s ease;
+  }
+  @keyframes pop{
+    from{ transform:scale(.7); opacity:0; }
+    to{ transform:scale(1); opacity:1; }
+  }
+  .modal-box p{
+    color:var(--pink-dark);
+    font-weight:700;
+    font-size:1.1rem;
+    line-height:1.5;
+    margin:0 0 18px;
+  }
+  .modal-box button{
+    background:var(--pink-deep);
+    color:#fff;
+    padding:10px 22px;
+    font-size:.95rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <img class="gif" src="https://media.giphy.com/media/SVkhYVCi8fKPKvypi6/giphy.gif" alt="Ảnh mèo">
+  <h1 id="mainText">xin lỗi bạn iuuu nhiều lắm, mình đã biết lỗi ròii ạ<br>Đằng ấy ơi choo mìnhh xinn lỗi nhóooo 😭</h1>
+  <div class="buttons">
+    <button id="yes">thôi tạm tha lỗi cho đó</button>
+    <button id="no">Không bao giờ</button>
+  </div>
+  <div id="result"></div>
+</div>
+
+<div class="modal-overlay" id="thankyouModal">
+  <div class="modal-box">
+    <p>cảm ơn bạn iuuu đã thaa loi cho mình nhaaa 💗</p>
+    <button id="closeModal">Đóng</button>
+  </div>
+</div>
+
+<script>
+  const noBtn = document.getElementById('no');
+  const yesBtn = document.getElementById('yes');
+  const result = document.getElementById('result');
+  const card = document.querySelector('.card');
+  const modal = document.getElementById('thankyouModal');
+  const closeModalBtn = document.getElementById('closeModal');
+
+  // Nút "Không bao giờ" chỉ thu nhỏ dần tại chỗ mỗi khi bị bấm, không đổi vị trí
+  let yesScale = 1;
+  let noScale = 1;
+  let noClickCount = 0;
+  const YES_STEP = 0.15;
+  const YES_MAX = 2.5;
+  const NO_STEP = 0.12;
+  const NO_MIN = 0.3;
+  const NO_MAX_CLICKS = 15;
+
+  function dodge(){
+    noClickCount++;
+
+    // Mỗi lần bấm: nút "Không bao giờ" thu nhỏ lại, nút "tạm tha lỗi" phình to lên
+    noScale = Math.max(NO_MIN, noScale - NO_STEP);
+    yesScale = Math.min(YES_MAX, yesScale + YES_STEP);
+    noBtn.style.transform = `scale(${noScale})`;
+    yesBtn.style.transform = `scale(${yesScale})`;
+
+    // Bấm quá 15 lần thì nút biến mất hẳn
+    if(noClickCount > NO_MAX_CLICKS){
+      noBtn.style.display = 'none';
+    }
+  }
+
+  noBtn.addEventListener('click', dodge);
+  noBtn.addEventListener('touchstart', function(e){
+    e.preventDefault();
+    dodge();
+  });
+
+  yesBtn.addEventListener('click', () => {
+    result.textContent = "Yeaaay 🎉 cảm ơn bạn iuu đã tha lỗi cho mình nha 💖";
+    modal.classList.add('show');
+    spawnHearts();
+  });
+
+  closeModalBtn.addEventListener('click', () => {
+    modal.classList.remove('show');
+  });
+  modal.addEventListener('click', (e) => {
+    if(e.target === modal) modal.classList.remove('show');
+  });
+
+  function spawnHearts(){
+    for(let i=0;i<60;i++){
+      const heart = document.createElement('div');
+      heart.className = 'heart';
+      heart.textContent = ['💗','💕','💖','😻'][Math.floor(Math.random()*4)];
+      heart.style.left = Math.random()*100 + 'vw';
+      heart.style.animationDuration = (2.5 + Math.random()*2.5) + 's';
+      heart.style.animationDelay = (Math.random()*1.2) + 's';
+      heart.style.fontSize = (1 + Math.random()*1.2) + 'rem';
+      document.body.appendChild(heart);
+      setTimeout(()=>heart.remove(), 7000);
+    }
+  }
+</script>
+
+</body>
+</html>
